@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WindowShopping — Discover Beautiful Things</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --cream: #faf8f4;
+      --charcoal: #1a1a1a;
+      --warm-gray: #8a8580;
+      --accent: #c9a96e;
+      --card-bg: #ffffff;
+      --shadow: 0 8px 40px rgba(0,0,0,0.12);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--cream);
+      color: var(--charcoal);
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      background: var(--cream);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      flex-shrink: 0;
+    }
+    .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: var(--accent); }
+    .zone-badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--warm-gray);
+      background: rgba(0,0,0,0.05);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .wishlist-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 22px; line-height: 1;
+    }
+
+    /* ── Stack area ── */
+    .stack-area {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 16px;
+    }
+
+    /* ── Card ── */
+    .card {
+      position: absolute;
+      width: min(360px, calc(100vw - 32px));
+      height: min(520px, calc(100dvh - 220px));
+      border-radius: 20px;
+      overflow: hidden;
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      will-change: transform;
+    }
+    .card:active { cursor: grabbing; }
+    .card.is-top { z-index: 10; }
+    .card.is-second { z-index: 9; transform: scale(0.95) translateY(10px); }
+    .card.is-third  { z-index: 8; transform: scale(0.90) translateY(20px); }
+    .card.hidden { display: none; }
+
+    /* swipe feedback overlays */
+    .card .like-overlay, .card .nope-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; font-weight: 900;
+      opacity: 0; pointer-events: none;
+      border-radius: 20px;
+      transition: opacity 0.1s;
+      z-index: 20;
+    }
+    .card .like-overlay { background: rgba(130, 200, 120, 0.25); color: #4a9e3f; }
+    .card .nope-overlay { background: rgba(220, 80, 80, 0.20);   color: #c0392b; }
+
+    /* card image */
+    .card-img {
+      width: 100%; height: 72%;
+      object-fit: cover;
+      display: block;
+      background: #e8e4df;
+    }
+    /* placeholder for missing image */
+    .card-img-placeholder {
+      width: 100%; height: 72%;
+      background: linear-gradient(135deg, #e8e4df 0%, #d4cfc8 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+    }
+
+    /* card info */
+    .card-info {
+      padding: 16px 20px;
+    }
+    .card-source {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--warm-gray);
+      margin-bottom: 4px;
+    }
+    .card-source .source-amazon { color: #ff9900; }
+    .card-source .source-aliexpress { color: #e43225; }
+    .card-name {
+      font-size: 17px; font-weight: 600; line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .card-price {
+      font-size: 15px; color: var(--warm-gray);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-price .shipping-note {
+      font-size: 11px; color: #b0a898;
+      background: rgba(0,0,0,0.04);
+      padding: 2px 8px; border-radius: 10px;
+    }
+    .card-zone {
+      font-size: 11px; color: var(--accent); font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* ── Bottom controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 16px 20px 24px;
+      flex-shrink: 0;
+    }
+    .btn {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:active { transform: scale(0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.10); }
+    .btn-nope { background: #fff; }
+    .btn-like { background: #fff; }
+    .btn-buy  { background: var(--accent); font-size: 20px; }
+
+    /* ── Detail overlay ── */
+    .detail-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: flex-end;
+    }
+    .detail-overlay.open { display: flex; }
+    .detail-sheet {
+      width: 100%; max-height: 80dvh;
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      padding: 24px 24px 40px;
+      overflow-y: auto;
+    }
+    .detail-handle {
+      width: 40px; height: 4px;
+      background: #ddd; border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .detail-img {
+      width: 100%; max-height: 260px;
+      object-fit: cover; border-radius: 14px;
+      margin-bottom: 16px;
+    }
+    .detail-name { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .detail-price { font-size: 18px; color: var(--warm-gray); margin-bottom: 12px; }
+    .detail-desc { font-size: 15px; line-height: 1.6; color: #555; margin-bottom: 24px; }
+    .detail-shipping {
+      font-size: 13px; color: var(--warm-gray);
+      background: #f5f3ef;
+      border-radius: 10px; padding: 10px 14px;
+      margin-bottom: 24px;
+    }
+    .buy-btn {
+      display: block; width: 100%;
+      padding: 16px;
+      background: var(--charcoal);
+      color: #fff;
+      border: none; border-radius: 14px;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer;
+      text-align: center; text-decoration: none;
+    }
+    .buy-btn:hover { background: #333; }
+
+    /* ── Empty state ── */
+    #empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height: 100%;
+      padding: 40px;
+    }
+    #empty-state .emoji { font-size: 56px; margin-bottom: 16px; }
+    #empty-state h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    #empty-state p { color: var(--warm-gray); font-size: 15px; line-height: 1.5; }
+    #empty-state button {
+      margin-top: 24px;
+      padding: 14px 32px;
+      background: var(--charcoal);
+      color: #fff;
+      border: none; border-radius: 30px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── Wishlist panel ── */
+    #wishlist-panel {
+      position: fixed; inset: 0; z-index: 200;
+      background: var(--cream);
+      display: none;
+      flex-direction: column;
+    }
+    #wishlist-panel.open { display: flex; }
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .panel-title { font-size: 20px; font-weight: 700; }
+    .close-btn { background: none; border: none; font-size: 26px; cursor: pointer; }
+    .wishlist-grid {
+      flex: 1; overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 16px;
+    }
+    .wishlist-item {
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .wishlist-item img, .wishlist-item .wi-placeholder {
+      width: 100%; aspect-ratio: 1;
+      object-fit: cover;
+      background: #e8e4df;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+    }
+    .wi-info { padding: 10px; }
+    .wi-name { font-size: 13px; font-weight: 600; line-height: 1.3; margin-bottom: 4px; }
+    .wi-price { font-size: 12px; color: var(--warm-gray); }
+    .wi-buy {
+      display: block; margin: 8px;
+      padding: 8px;
+      background: var(--charcoal);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      text-align: center; text-decoration: none;
+    }
+    .wishlist-empty {
+      grid-column: 1/-1;
+      text-align: center; color: var(--warm-gray);
+      padding: 60px 20px;
+    }
+    .wishlist-empty .emoji { font-size: 48px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">Window<span>Shopping</span></div>
+  <div class="zone-badge" id="zone-label">All</div>
+  <button class="wishlist-btn" onclick="openWishlist()" title="Wishlist">🤍</button>
+</header>
+
+<!-- Card stack -->
+<div class="stack-area" id="stack-area">
+  <!-- Cards injected by JS -->
+  <div id="empty-state">
+    <div class="emoji">✨</div>
+    <h2>You've seen everything!</h2>
+    <p>New curations drop every week.<br>Check back soon.</p>
+    <button onclick="resetCards()">Start over</button>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="btn btn-nope" onclick="swipeCard('left')"  title="Pass">✕</button>
+  <button class="btn btn-buy"  onclick="buyTop()"           title="Buy now">🛍</button>
+  <button class="btn btn-like" onclick="swipeCard('right')" title="Save">♡</button>
+</div>
+
+<!-- Detail overlay -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-sheet" id="detail-sheet">
+    <div class="detail-handle"></div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- Wishlist panel -->
+<div id="wishlist-panel">
+  <div class="panel-header">
+    <span class="panel-title">💛 Saved Items</span>
+    <button class="close-btn" onclick="closeWishlist()">✕</button>
+  </div>
+  <div class="wishlist-grid" id="wishlist-grid"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// PRODUCT DATA
+// Replace placeholder entries with real products.
+// Each product needs:
+//   id, name, price, zone, source ('amazon'|'aliexpress'),
+//   affiliateUrl, imageUrl (or leave '' for emoji placeholder),
+//   emoji (fallback), shipping, description
+// ─────────────────────────────────────────────
+const AMAZON_TAG  = 'windowshop0ee-20';
+const AX_TAG      = 'windowshopping';
+
+function amazonUrl(asin) {
+  return `https://www.amazon.com/dp/${asin}?tag=${AMAZON_TAG}`;
+}
+function aliUrl(itemId) {
+  return `https://www.aliexpress.com/item/${itemId}.html?aff_fcid=${AX_TAG}&aff_platform=portals-tool`;
+}
+
+const PRODUCTS = [
+  // ── Zone 1: Kitchen & Home ──────────────────
+  {
+    id: 'p1',
+    name: 'Translucent Bone China Coffee Cup Set',
+    price: '$38',
+    zone: 'Kitchen & Home',
+    source: 'aliexpress',
+    affiliateUrl: aliUrl('3256810206072253'),
+    imageUrl: 'images/p1.jpeg',
+    emoji: '☕',
+    shipping: '🚢 Ships from China · 2–4 weeks',
+    description: 'Delicate, light-as-air bone china cups that glow when held to the light. Each cup is hand-finished and impeccably thin — the kind of thing you only find in small ateliers back home.'
+  },
+  {
+    id: 'p2',
+    name: 'Egg-Shaped Stainless Steel Soup Spoon',
+    price: '$22',
+    zone: 'Kitchen & Home',
+    source: 'amazon',
+    affiliateUrl: amazonUrl('B073578QSM'),
+    imageUrl: 'images/p2.jpeg',
+    emoji: '🥄',
+    shipping: '🚚 Ships via Amazon Prime',
+    description: 'Sculptural and functional. The egg-shaped bowl cradles broth perfectly, while the seamless stainless finish stays polished wash after wash. A quiet upgrade to any table setting.'
+  },
+  {
+    id: 'p3',
+    name: 'Fellow Stagg EKG Electric Pour-Over Kettle',
+    price: '$165',
+    zone: 'Kitchen & Home',
+    source: 'amazon',
+    affiliateUrl: amazonUrl('B073ZN74JT'),
+    imageUrl: 'images/p3.jpeg',
+    emoji: '🫖',
+    shipping: '🚀 Amazon Prime · Free 2-day delivery',
+    description: 'The pour-over kettle that became a cult object. Precision temperature control down to 1°F, a gorgeous gooseneck, and a built-in stopwatch. Makes brewing feel like a ritual worth keeping.'
+  },
+
+  // ── Zone 2: Fashion ─────────────────────────
+  {
+    id: 'p4',
+    name: 'Acetate Satin Midi Skirt',
+    price: '$45',
+    zone: 'Fashion',
+    source: 'amazon',
+    affiliateUrl: amazonUrl('B09XXNBH83'),
+    imageUrl: 'images/p4.jpeg',
+    emoji: '👗',
+    shipping: '🚀 Amazon Prime · Free 2-day delivery',
+    description: 'The skirt that looks expensive and feels like wearing nothing. Fluid acetate satin drapes perfectly — wears equally well tucked into a crisp shirt or under an oversized knit.'
+  },
+  {
+    id: 'p5',
+    name: 'Oversized Linen Shirt — Off White',
+    price: '$52',
+    zone: 'Fashion',
+    source: 'amazon',
+    affiliateUrl: amazonUrl('B0GV448N6Y'),
+    imageUrl: 'images/p5.jpeg',
+    emoji: '👕',
+    shipping: '🚀 Amazon Prime · Free 2-day delivery',
+    description: 'Relaxed, breezy, effortlessly put together. Pure linen with a drop shoulder and generous cut — the shirt you reach for when you want to look like you tried without trying.'
+  },
+  {
+    id: 'p6',
+    name: 'Mary Jane Flat — Soft Nappa Leather',
+    price: '$78',
+    zone: 'Fashion',
+    source: 'amazon',
+    affiliateUrl: amazonUrl('B0FJFMNXB1'),
+    imageUrl: 'images/p6.jpeg',
+    emoji: '👞',
+    shipping: '🚀 Amazon Prime · Free 2-day delivery',
+    description: 'The flat that feels like a hug. Round toe, gentle strap, cushioned insole — serious comfort dressed up as a proper shoe. Pairs with everything from linen trousers to Sunday dresses.'
+  },
+  {
+    id: 'p7',
+    name: 'Vegetable-Tanned Leather Tote',
+    price: '$120',
+    zone: 'Fashion',
+    source: 'amazon',
+    affiliateUrl: amazonUrl('B0F9YF49FZ'),
+    imageUrl: 'images/p7.jpeg',
+    emoji: '👜',
+    shipping: '🚀 Amazon Prime · Free 2-day delivery',
+    description: 'Real veg-tan leather that darkens and softens with use. Unlined, unstructured, undeniably beautiful. This is the bag that gets better every year — the opposite of fast fashion.'
+  },
+
+  // ── Zone 3: Tech ────────────────────────────
+  {
+    id: 'p8',
+    name: 'DJI Robot Vacuum',
+    price: '$1,949',
+    zone: 'Tech',
+    source: 'aliexpress',
+    affiliateUrl: aliUrl('3256811931337673'),
+    imageUrl: 'images/p8.jpeg',
+    emoji: '🤖',
+    shipping: '🚢 Ships from China · 2–4 weeks',
+    description: "DJI's precision engineering applied to your floors. Intelligent mapping, obstacle avoidance, and the kind of build quality you'd expect from the company that makes the world's best drones."
+  },
+];
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let deck      = [...PRODUCTS];
+let wishlist  = JSON.parse(localStorage.getItem('ws_wishlist') || '[]');
+let topIndex  = 0;  // index into deck of current top card
+
+// Touch/drag state
+let dragging   = false;
+let startX     = 0;
+let startY     = 0;
+let currentX   = 0;
+let topCardEl  = null;
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+function init() {
+  renderStack();
+  updateZoneLabel();
+}
+
+function renderStack() {
+  const area = document.getElementById('stack-area');
+  // Remove old cards (not empty-state)
+  area.querySelectorAll('.card').forEach(c => c.remove());
+
+  if (topIndex >= deck.length) {
+    document.getElementById('empty-state').style.display = 'flex';
+    return;
+  }
+  document.getElementById('empty-state').style.display = 'none';
+
+  // Render up to 3 cards, back-to-front
+  for (let i = Math.min(topIndex + 2, deck.length - 1); i >= topIndex; i--) {
+    const card = createCardEl(deck[i], i - topIndex);
+    area.appendChild(card);
+  }
+  bindDrag();
+}
+
+function createCardEl(product, stackPos) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.dataset.id = product.id;
+
+  if (stackPos === 0) el.classList.add('is-top');
+  else if (stackPos === 1) el.classList.add('is-second');
+  else el.classList.add('is-third');
+
+  const imgHtml = product.imageUrl
+    ? `<img class="card-img" src="${product.imageUrl}" alt="${product.name}" loading="lazy" />`
+    : `<div class="card-img-placeholder">${product.emoji}</div>`;
+
+  const sourceClass = product.source === 'amazon' ? 'source-amazon' : 'source-aliexpress';
+  const sourceLabel = product.source === 'amazon' ? '🟡 Amazon' : '🔴 AliExpress';
+
+  el.innerHTML = `
+    <div class="like-overlay">SAVE ♡</div>
+    <div class="nope-overlay">PASS ✕</div>
+    ${imgHtml}
+    <div class="card-info">
+      <div class="card-source"><span class="${sourceClass}">${sourceLabel}</span></div>
+      <div class="card-name">${product.name}</div>
+      <div class="card-price">
+        ${product.price}
+        <span class="shipping-note">${product.source === 'amazon' ? '2-day' : '2–4 wks'}</span>
+      </div>
+      <div class="card-zone">${product.zone}</div>
+    </div>
+  `;
+
+  // Tap to open detail (only if not dragging)
+  el.addEventListener('click', (e) => {
+    if (Math.abs(currentX - startX) < 8) openDetail(product);
+  });
+
+  return el;
+}
+
+function updateZoneLabel() {
+  const label = document.getElementById('zone-label');
+  if (topIndex < deck.length) {
+    label.textContent = deck[topIndex].zone;
+  }
+}
+
+// ─────────────────────────────────────────────
+// DRAG / SWIPE
+// ─────────────────────────────────────────────
+function bindDrag() {
+  topCardEl = document.querySelector('.card.is-top');
+  if (!topCardEl) return;
+
+  topCardEl.addEventListener('mousedown',  onStart);
+  topCardEl.addEventListener('touchstart', onStart, { passive: true });
+}
+
+function onStart(e) {
+  dragging = true;
+  const pt = e.touches ? e.touches[0] : e;
+  startX = pt.clientX;
+  startY = pt.clientY;
+  currentX = startX;
+  topCardEl.style.transition = 'none';
+
+  document.addEventListener('mousemove',  onMove);
+  document.addEventListener('touchmove',  onMove, { passive: false });
+  document.addEventListener('mouseup',    onEnd);
+  document.addEventListener('touchend',   onEnd);
+}
+
+function onMove(e) {
+  if (!dragging) return;
+  if (e.cancelable) e.preventDefault();
+  const pt = e.touches ? e.touches[0] : e;
+  currentX = pt.clientX;
+  const dx = currentX - startX;
+  const dy = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+  const rot = dx * 0.08;
+  topCardEl.style.transform = `translate(${dx}px, ${dy * 0.3}px) rotate(${rot}deg)`;
+
+  const likeOv = topCardEl.querySelector('.like-overlay');
+  const nopeOv = topCardEl.querySelector('.nope-overlay');
+  const ratio  = Math.min(Math.abs(dx) / 120, 1);
+  likeOv.style.opacity = dx > 0 ? ratio : 0;
+  nopeOv.style.opacity = dx < 0 ? ratio : 0;
+
+  // Whole-screen tint: warm rose for like, cool slate for nope
+  if (dx > 0) {
+    document.body.style.background = `rgb(${Math.round(250 + ratio * 5)}, ${Math.round(248 - ratio * 60)}, ${Math.round(244 - ratio * 80)})`;
+  } else if (dx < 0) {
+    document.body.style.background = `rgb(${Math.round(250 - ratio * 60)}, ${Math.round(248 - ratio * 30)}, ${Math.round(244 + ratio * 20)})`;
+  }
+}
+
+function onEnd(e) {
+  if (!dragging) return;
+  dragging = false;
+  document.removeEventListener('mousemove',  onMove);
+  document.removeEventListener('touchmove',  onMove);
+  document.removeEventListener('mouseup',    onEnd);
+  document.removeEventListener('touchend',   onEnd);
+
+  const dx = currentX - startX;
+  if (Math.abs(dx) > 90) {
+    animateOut(dx > 0 ? 'right' : 'left');
+  } else {
+    // Snap back
+    topCardEl.style.transition = 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)';
+    topCardEl.style.transform  = '';
+    document.body.style.transition = 'background 0.35s ease';
+    document.body.style.background = 'var(--cream)';
+    topCardEl.querySelector('.like-overlay').style.opacity = 0;
+    topCardEl.querySelector('.nope-overlay').style.opacity = 0;
+  }
+}
+
+function swipeCard(dir) {
+  if (!topCardEl) return;
+  animateOut(dir);
+}
+
+function animateOut(dir) {
+  const tx = dir === 'right' ? window.innerWidth * 1.4 : -window.innerWidth * 1.4;
+  topCardEl.style.transition = 'transform 0.38s cubic-bezier(0.6,0,0.8,1), opacity 0.38s';
+  topCardEl.style.transform  = `translate(${tx}px, -60px) rotate(${dir === 'right' ? 25 : -25}deg)`;
+  topCardEl.style.opacity    = '0';
+  document.body.style.transition = 'background 0.5s ease';
+  document.body.style.background = 'var(--cream)';
+
+  if (dir === 'right') {
+    addToWishlist(deck[topIndex]);
+  }
+
+  setTimeout(() => {
+    topIndex++;
+    updateZoneLabel();
+    renderStack();
+  }, 380);
+}
+
+// ─────────────────────────────────────────────
+// WISHLIST
+// ─────────────────────────────────────────────
+function addToWishlist(product) {
+  if (!wishlist.find(p => p.id === product.id)) {
+    wishlist.push(product);
+    localStorage.setItem('ws_wishlist', JSON.stringify(wishlist));
+  }
+}
+
+function openWishlist() {
+  const panel = document.getElementById('wishlist-panel');
+  const grid  = document.getElementById('wishlist-grid');
+  grid.innerHTML = '';
+
+  if (!wishlist.length) {
+    grid.innerHTML = `
+      <div class="wishlist-empty">
+        <div class="emoji">🤍</div>
+        <p>Swipe right on things you love<br>and they'll appear here.</p>
+      </div>`;
+  } else {
+    wishlist.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'wishlist-item';
+      const imgHtml = p.imageUrl
+        ? `<img src="${p.imageUrl}" alt="${p.name}" />`
+        : `<div class="wi-placeholder">${p.emoji}</div>`;
+      item.innerHTML = `
+        ${imgHtml}
+        <div class="wi-info">
+          <div class="wi-name">${p.name}</div>
+          <div class="wi-price">${p.price}</div>
+        </div>
+        <a class="wi-buy" href="${p.affiliateUrl}" target="_blank" rel="noopener">Buy now →</a>
+      `;
+      grid.appendChild(item);
+    });
+  }
+
+  panel.classList.add('open');
+}
+
+function closeWishlist() {
+  document.getElementById('wishlist-panel').classList.remove('open');
+}
+
+// ─────────────────────────────────────────────
+// DETAIL
+// ─────────────────────────────────────────────
+function openDetail(product) {
+  const overlay = document.getElementById('detail-overlay');
+  const content = document.getElementById('detail-content');
+  const imgHtml = product.imageUrl
+    ? `<img class="detail-img" src="${product.imageUrl}" alt="${product.name}" />`
+    : `<div style="width:100%;height:200px;background:#e8e4df;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:64px;margin-bottom:16px;">${product.emoji}</div>`;
+
+  const sourceLabel = product.source === 'amazon'
+    ? '🟡 Ships via Amazon · 2-day Prime'
+    : '🔴 Ships from China · 2–4 weeks';
+
+  content.innerHTML = `
+    ${imgHtml}
+    <div class="detail-name">${product.name}</div>
+    <div class="detail-price">${product.price} · ${product.zone}</div>
+    <div class="detail-desc">${product.description}</div>
+    <div class="detail-shipping">${sourceLabel}</div>
+    <a class="buy-btn" href="${product.affiliateUrl}" target="_blank" rel="noopener"
+       onclick="trackClick('${product.id}')">
+      Buy Now →
+    </a>
+  `;
+  overlay.classList.add('open');
+}
+
+function closeDetail(e) {
+  if (e.target === document.getElementById('detail-overlay')) {
+    document.getElementById('detail-overlay').classList.remove('open');
+  }
+}
+
+function buyTop() {
+  if (topIndex < deck.length) {
+    const p = deck[topIndex];
+    trackClick(p.id);
+    window.open(p.affiliateUrl, '_blank', 'noopener');
+  }
+}
+
+// ─────────────────────────────────────────────
+// ANALYTICS (lightweight, no external SDK)
+// Replace with PostHog/Plausible snippet when ready
+// ─────────────────────────────────────────────
+const _analytics = [];
+
+function trackEvent(name, props) {
+  const event = { ts: Date.now(), name, ...props };
+  _analytics.push(event);
+  // console.log('[ws]', event);  // uncomment to debug
+  // TODO: flush to your analytics endpoint
+}
+
+function trackClick(productId) {
+  trackEvent('buy_click', { productId, source: deck.find(p=>p.id===productId)?.source });
+}
+
+// Track dwell time per card
+let _dwellStart = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && topIndex < deck.length) {
+    trackEvent('dwell', { productId: deck[topIndex].id, ms: Date.now() - _dwellStart });
+  } else {
+    _dwellStart = Date.now();
+  }
+});
+
+// ─────────────────────────────────────────────
+// RESET
+// ─────────────────────────────────────────────
+function resetCards() {
+  topIndex = 0;
+  renderStack();
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>
