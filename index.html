@@ -352,6 +352,11 @@
 
 <!-- Card stack -->
 <div class="stack-area" id="stack-area">
+  <!-- Swipe onboarding hint (hidden after first swipe) -->
+  <div id="swipe-hint">
+    <span class="hint-arrows">←→</span>
+    <span>Swipe to explore</span>
+  </div>
   <!-- Cards injected by JS -->
   <div id="empty-state">
     <div class="emoji">✨</div>
@@ -824,9 +829,32 @@ function preloadImages() {
   });
 }
 
+// ─────────────────────────────────────────────
+// ONBOARDING HINT
+// ─────────────────────────────────────────────
+function initHint() {
+  const hint = document.getElementById('swipe-hint');
+  if (!hint) return;
+  if (localStorage.getItem('ws_swiped')) {
+    hint.style.display = 'none';
+    return;
+  }
+  // Hide on first swipe
+  const hideHint = () => {
+    localStorage.setItem('ws_swiped', '1');
+    hint.classList.add('hidden');
+    setTimeout(() => { hint.style.display = 'none'; }, 500);
+    document.removeEventListener('touchstart', hideHint);
+    document.removeEventListener('mousedown', hideHint);
+  };
+  document.addEventListener('touchstart', hideHint, { once: true });
+  document.addEventListener('mousedown', hideHint, { once: true });
+}
+
 // Boot
 preloadImages();
 init();
+initHint();
 </script>
 </body>
 </html>
