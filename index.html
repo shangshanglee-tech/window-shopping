@@ -365,7 +365,7 @@
 <div class="controls">
   <button class="btn btn-nope" onclick="swipeCard('left')"  title="Pass">✕</button>
   <button class="btn btn-buy"  onclick="buyTop()"           title="Buy now">🛍</button>
-  <button class="btn btn-like" onclick="swipeCard('right')" title="Save">♡</button>
+  <button class="btn btn-like" onclick="swipeCard('right')" title="Save">🤍</button>
 </div>
 
 <!-- Detail overlay -->
@@ -559,14 +559,14 @@ function createCardEl(product, stackPos) {
   else el.classList.add('is-third');
 
   const imgHtml = product.imageUrl
-    ? `<img class="card-img" src="${product.imageUrl}" alt="${product.name}" loading="lazy" />`
+    ? `<img class="card-img" src="${product.imageUrl}" alt="${product.name}" />`
     : `<div class="card-img-placeholder">${product.emoji}</div>`;
 
   const sourceClass = product.source === 'amazon' ? 'source-amazon' : 'source-aliexpress';
   const sourceLabel = product.source === 'amazon' ? '🟡 Amazon' : '🔴 AliExpress';
 
   el.innerHTML = `
-    <div class="like-overlay">SAVE ♡</div>
+    <div class="like-overlay">SAVE 🤍</div>
     <div class="nope-overlay">PASS ✕</div>
     ${imgHtml}
     <div class="card-info">
@@ -814,7 +814,18 @@ function resetCards() {
   renderStack();
 }
 
+// Preload all product images so swipes are instant
+function preloadImages() {
+  PRODUCTS.forEach(p => {
+    if (p.imageUrl) {
+      const img = new Image();
+      img.src = p.imageUrl;
+    }
+  });
+}
+
 // Boot
+preloadImages();
 init();
 </script>
 </body>
